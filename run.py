@@ -1,10 +1,14 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
 from config import DevelopmentConfig, ProductionConfig
+
 
 from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+# Enable CORS for all routes and origins
+CORS(app)
 
 app.config.from_object("config.DevelopmentConfig")
 
@@ -17,7 +21,7 @@ app.config.from_object("config.DevelopmentConfig")
 def home():
     return "Welcome to the Flask Backend!"
 
-@app.route('/api/data')
+@app.route('/get_data')
 def get_data():
     # Example data
     data = {
