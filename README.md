@@ -3,8 +3,9 @@ Recipe Roulette Backend
 
 # Make sure to install dependencies first
 1. pip install Flask
-2. pip install jsonify
-3. pip install python-dotenv
+2. pip install flask-cors
+3. pip install jsonify
+4. pip install python-dotenv
 
 # Setup env file
 1. Get API Keys from Casey
