@@ -2,16 +2,15 @@
 Recipe Roulette Backend
 
 # Make sure to install dependencies first
-1. pip install Flask
-2. pip install flask-cors
-3. pip install jsonify
-4. pip install python-dotenv
+1. cd into the root of your project file 
+2. pip install -r requirements.txt
 
-# Setup env file
-1. Get API Keys from Casey
-2. Insert Given Keys into .env file
-3. DO NOT PUSH THE ENV FILE TO GITHUB AFTER YOU ADD THE KEYS, THIS WILL CAUSE OUR API KEYS TO BREAK
+# Setup env file and database credentials
+1. Get OpenAPI Key from Casey
+2. Get Firebase Credentials from Casey
+3. Insert OpenAI Key into .env file
+4. Insert Credentials into firebase_auth.json
+5. DO NOT PUSH THE ENV OR CREDENTIALS JSON TO GITHUB, THIS WILL CAUSE OUR API KEYS TO BREAK
 
 # Run The Program
-1. cd recipe-roulette-backend
 2. python .\run.py
