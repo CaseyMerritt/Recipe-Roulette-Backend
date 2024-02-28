@@ -90,7 +90,7 @@ def get_ai_recipe():
 
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Replace "Recipe Maker" with a valid model identifier
+            model="Recipe Maker",  # Replace "Recipe Maker" with a valid model identifier
             messages=[
                 {"role": "system", "content": "Generate a Recipe that is " + tags + " and contains the following ingredients: " + ingredients + "."}
             ]
