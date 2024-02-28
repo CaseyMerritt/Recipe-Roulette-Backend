@@ -1,6 +1,9 @@
 # Recipe-Roulette-Backend
 Recipe Roulette Backend
 
+# Install Python
+1. Install Python Newest Version should be fine [download](https://www.python.org/downloads/)
+
 # Make sure to install dependencies first
 1. cd into the root of your project file 
 2. pip install -r requirements.txt
