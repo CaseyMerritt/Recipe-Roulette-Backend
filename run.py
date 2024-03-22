@@ -1,104 +1,125 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from config import DevelopmentConfig, ProductionConfig
-
-import firebase_admin
+from flask_restx import Api, Resource
+from models.api_models import get_models  # Import the models
+from dotenv import load_dotenv
 from firebase_admin import credentials, firestore
+import firebase_admin
 import random
-
 import openai
 
-
-from dotenv import load_dotenv
 load_dotenv()
-
 app = Flask(__name__)
-# Enable CORS for all routes and origins
-CORS(app)
-
 app.config.from_object(DevelopmentConfig)
+
+CORS(app) # Enable CORS
 
 # Initialize Firebase Admin
 cred = credentials.Certificate(app.config['FIREBASE_CONFIG_JSON'])
 firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 # Initialize Openai connection
 openai.api_key = app.config['OPENAI_API_KEY']
 
-# Get a reference to the Firestore service
-db = firestore.client()
+# Set Up Swagger
+api = Api(app, version='1.0', title='Recipe Roulette Backend API', description='Recipe Roulette Backend API')
+recipe_request_model, ai_recipe_request_model = get_models(api)
+ns = api.namespace('RR', description='Recipe operations')
 
-@app.route('/')
-def home():
-    return "Welcome to the Flask Backend!"
-
-@app.route('/get_data')
-def get_data():
-    # Example data
-    data = {
-        "message": "This is a sample response from your Flask API",
-        "items": ["item1", "item2", "item3"]
-    }
-    return jsonify(data)
-
-@app.route('/get_recipes', methods=['POST'])
-def get_recipes():
-    data = request.get_json()
-    tags = data.get('tags')
-    count = data.get('count', None)  # Default to None if count is not provided
-
-    if not tags or not isinstance(tags, list):
-        return jsonify({'error': 'Invalid or missing tags'}), 400
-
-    try:
-        recipes_ref = db.collection('recipes')
-        matching_recipes = []
-        for tag in tags:
-            query = recipes_ref.where('tags', 'array_contains', tag).stream()
-            for doc in query:
-                if doc.id not in [recipe['id'] for recipe in matching_recipes]:
-                    recipe = doc.to_dict()
-                    recipe['id'] = doc.id
-                    matching_recipes.append(recipe)
-
-        # If a count is provided and is less than the number of matching recipes,
-        # randomly select 'count' recipes from the list of matching recipes
-        if count is not None and 0 < count < len(matching_recipes):
-            matching_recipes = random.sample(matching_recipes, count)
-
-        return jsonify(matching_recipes)
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# Basic Route
+@ns.route('/')
+class Home(Resource):
+    @api.doc(description="Welcome endpoint")
+    def get(self):
+        """Welcome to the Flask Backend!"""
+        return "Welcome to the Flask Backend!"
     
-@app.route('/get_ai_recipe', methods=['POST'])
-def get_ai_recipe():
-    data = request.get_json()
 
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
+# Basic Test Fetch
+@ns.route('/get_data')
+class GetData(Resource):
+    @api.doc(description="Get sample data")
+    def get(self):
+        """Fetch sample data"""
+        data = {
+            "message": "This is a sample response from your Flask API",
+            "items": ["item1", "item2", "item3"]
+        }
+        return jsonify(data)
+    
 
-    # Check if 'ingredients' and 'tags' are provided and are lists
-    if 'ingredients' not in data or not isinstance(data['ingredients'], list):
-        return jsonify({'error': 'Ingredients are required and must be a list'}), 400
-    if 'tags' not in data or not isinstance(data['tags'], list):
-        return jsonify({'error': 'Tags are required and must be a list'}), 400
+# Get Recipes Function
+@ns.route('/get_recipes')
+class GetRecipes(Resource):
+    @api.expect(recipe_request_model)
+    @api.doc(description="Get recipes based on tags", body=recipe_request_model)
+    def post(self):
+        data = request.get_json()
+        tags = data.get('tags')
+        count = data.get('count', None)  # Default to None if count is not provided
 
-    # Join ingredients and tags with ', '
-    ingredients = ', '.join(data['ingredients'])
-    tags = ', '.join(data['tags'])
+        print(tags)
+        print(count)
 
-    try:
-        response = openai.ChatCompletion.create(
-            model="Recipe Maker",  # Replace "Recipe Maker" with a valid model identifier
-            messages=[
-                {"role": "system", "content": "Generate a Recipe that is " + tags + " and contains the following ingredients: " + ingredients + "."}
-            ]
-        )
-    except Exception as e:
-        return jsonify({'error': 'Failed to generate recipe', 'details': str(e)}), 500
+        if not tags or not isinstance(tags, list):
+            return jsonify({'error': 'Invalid or missing tags'}), 400
 
-    return jsonify({'recipe': response.choices[0].message['content']})
+        try:
+            recipes_ref = db.collection('recipes')
+            matching_recipes = []
+            for tag in tags:
+                query = recipes_ref.where('tags', 'array_contains', tag).stream()
+                for doc in query:
+                    if doc.id not in [recipe['id'] for recipe in matching_recipes]:
+                        recipe = doc.to_dict()
+                        recipe['id'] = doc.id
+                        matching_recipes.append(recipe)
+
+            # If a count is provided and is less than the number of matching recipes,
+            # randomly select 'count' recipes from the list of matching recipes
+            if count is not None and 0 < count < len(matching_recipes):
+                matching_recipes = random.sample(matching_recipes, count)
+
+            return jsonify(matching_recipes)
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+
+# Get Ai Generated Recipe Function 
+@ns.route('/get_ai_recipe')
+class GetAIRecipe(Resource):
+    @api.expect(ai_recipe_request_model)
+    @api.doc(description="Generate a recipe based on ingredients and tags")
+    def post(self):
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        # Check if 'ingredients' and 'tags' are provided and are lists
+        if 'ingredients' not in data or not isinstance(data['ingredients'], list):
+            return jsonify({'error': 'Ingredients are required and must be a list'}), 400
+        if 'tags' not in data or not isinstance(data['tags'], list):
+            return jsonify({'error': 'Tags are required and must be a list'}), 400
+
+        # Join ingredients and tags with ', '
+        ingredients = ', '.join(data['ingredients'])
+        tags = ', '.join(data['tags'])
+
+        try:
+            response = openai.ChatCompletion.create(
+                model="Recipe Maker",  # Replace "Recipe Maker" with a valid model identifier
+                messages=[
+                    {"role": "system", "content": "Generate a Recipe that is " + tags + " and contains the following ingredients: " + ingredients + "."}
+                ]
+            )
+        except Exception as e:
+            return jsonify({'error': 'Failed to generate recipe', 'details': str(e)}), 500
+
+        return jsonify({'recipe': response.choices[0].message['content']})
 
 
 if __name__ == '__main__':
