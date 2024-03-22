@@ -111,15 +111,15 @@ class GetAIRecipe(Resource):
 
         try:
             response = openai.ChatCompletion.create(
-                model="Recipe Maker",  # Replace "Recipe Maker" with a valid model identifier
+                model="GPT-4",  # Replace "Recipe Maker" with a valid model identifier
                 messages=[
                     {"role": "system", "content": "Generate a Recipe that is " + tags + " and contains the following ingredients: " + ingredients + "."}
                 ]
             )
         except Exception as e:
-            return jsonify({'error': 'Failed to generate recipe', 'details': str(e)}), 500
+            return response, 500
 
-        return jsonify({'recipe': response.choices[0].message['content']})
+        return response
 
 
 if __name__ == '__main__':
