@@ -109,18 +109,25 @@ class GetAIRecipe(Resource):
         ingredients = ', '.join(data['ingredients'])
         tags = ', '.join(data['tags'])
 
+        # Try to get GPT's response
         try:
-            response = openai.ChatCompletion.create(
-                model="GPT-4",  # Replace "Recipe Maker" with a valid model identifier
+            response = openai.chat.completions.create(
+                model="gpt-4", # model="gpt-3.5-turbo",  <= Use for gpt3.5-turbo
+                # response_format={ "type": "json_object" }, <= Only for gpt3.5-turbo
                 messages=[
-                    {"role": "system", "content": "Generate a Recipe that is " + tags + " and contains the following ingredients: " + ingredients + "."}
+                    {"role": "system", "content": "Generate json file with 'Recipe' name then 'Ingredients' then 'Steps' that is " + tags + " and contains ONLY the following ingredients and water: " + ingredients + "."}
                 ]
             )
+            
+        # Handle exceptions with GPT response
         except Exception as e:
+            print(e)
+            response = "No Response"
             return response, 500
-
-        return response
-
+        
+        # Give to console then to the post request return
+        print(response.choices[0].message.content)
+        return response.choices[0].message.content
 
 if __name__ == '__main__':
     app.run(debug=True)
