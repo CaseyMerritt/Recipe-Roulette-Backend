@@ -8,6 +8,7 @@ from firebase_admin import credentials, firestore
 import firebase_admin
 import random
 import openai
+import json
 
 load_dotenv()
 app = Flask(__name__)
@@ -60,9 +61,6 @@ class GetRecipes(Resource):
         tags = data.get('tags')
         count = data.get('count', None)  # Default to None if count is not provided
 
-        print(tags)
-        print(count)
-
         if not tags or not isinstance(tags, list):
             return {"Error": "Invalid or missing tags"}, 400
 
@@ -89,7 +87,7 @@ class GetRecipes(Resource):
             return matching_recipes
 
         except Exception as e:
-            return {"Error": + str(e)}, 500
+            return {"Error": str(e)}, 500
 
 
 # Get Ai Generated Recipe Function 
@@ -113,8 +111,10 @@ class GetAIRecipe(Resource):
         ingredients = ', '.join(data['ingredients'])
         tags = ', '.join(data['aiTags'])
 
-        if not ingredients or tags:
-            return {'Error': 'Tags Or Ingredients are not filled out'}, 400
+        print(tags)
+
+        if not ingredients:
+            return {'Error': 'Ingredients are not filled out'}, 400
         
 
         # Try to get GPT's response
@@ -123,19 +123,23 @@ class GetAIRecipe(Resource):
                 model="gpt-4", # model="gpt-3.5-turbo",  <= Use for gpt3.5-turbo
                 # response_format={ "type": "json_object" }, <= Only for gpt3.5-turbo
                 messages=[
-                    {"role": "system", "content": "Generate json file with 'Recipe' name then 'Ingredients' then 'Steps' that is " + tags + " and contains ONLY the following ingredients and water: " + ingredients + "."}
+                    {"role": "system", "content": "Generate json file with recipe 'title' then 'description' then 'ingredients' then 'steps' that is " + tags + " and contains ONLY the following ingredients and water: " + ingredients + "."}
                 ]
             )
+
+            try:
+                recipe_data = json.loads(response.choices[0].message.content)
+
+                return recipe_data
+            
+            except json.JSONDecodeError:
+                # If parsing fails, return an error message
+                return {"error": "Failed to parse GPT response as JSON", "gpt_response": response}, 500
             
         # Handle exceptions with GPT response
         except Exception as e:
             print(e)
-            response = "No Response"
-            return response, 500
-        
-        # Give to console then to the post request return
-        print(response.choices[0].message.content)
-        return response.choices[0].message.content
+            return {"error": "Failed to get response from GPT", "detail": str(e)}, 500
 
 if __name__ == '__main__':
     app.run(debug=True)
