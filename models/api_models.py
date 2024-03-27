@@ -10,7 +10,7 @@ def get_models(api):
 
     ai_recipe_request_model = api.model('Ai Recipe Request', {
         'ingredients': fields.List(fields.String, required=True, description='List of ingredients'),
-        'tags': fields.List(fields.String, required=True, description='List of tags')
+        'aiTags': fields.List(fields.String, required=True, description='List of tags')
     })
 
     return recipe_request_model, ai_recipe_request_model

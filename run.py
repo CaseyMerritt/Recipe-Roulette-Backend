@@ -64,7 +64,7 @@ class GetRecipes(Resource):
         print(count)
 
         if not tags or not isinstance(tags, list):
-            return jsonify({'error': 'Invalid or missing tags'}), 400
+            return {"Error": "Invalid or missing tags"}, 400
 
         try:
             recipes_ref = db.collection('recipes')
@@ -82,10 +82,14 @@ class GetRecipes(Resource):
             if count is not None and 0 < count < len(matching_recipes):
                 matching_recipes = random.sample(matching_recipes, count)
 
-            return jsonify(matching_recipes)
+            # Check if matching_recipes is empty after the search
+            if not matching_recipes:
+                return {"Error": "No Recipes Found With Those Tags!"}, 404
+
+            return matching_recipes
 
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return {"Error": + str(e)}, 500
 
 
 # Get Ai Generated Recipe Function 
@@ -97,17 +101,21 @@ class GetAIRecipe(Resource):
         data = request.get_json()
 
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return {'Error': 'No data provided'}, 400
 
         # Check if 'ingredients' and 'tags' are provided and are lists
         if 'ingredients' not in data or not isinstance(data['ingredients'], list):
-            return jsonify({'error': 'Ingredients are required and must be a list'}), 400
-        if 'tags' not in data or not isinstance(data['tags'], list):
-            return jsonify({'error': 'Tags are required and must be a list'}), 400
+            return {'Error': 'Ingredients are required and must be a list'}, 400
+        if 'aiTags' not in data or not isinstance(data['aiTags'], list):
+            return {'Error': 'Tags are required and must be a list'}, 400
 
         # Join ingredients and tags with ', '
         ingredients = ', '.join(data['ingredients'])
-        tags = ', '.join(data['tags'])
+        tags = ', '.join(data['aiTags'])
+
+        if not ingredients or tags:
+            return {'Error': 'Tags Or Ingredients are not filled out'}, 400
+        
 
         # Try to get GPT's response
         try:
