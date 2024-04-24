@@ -31,17 +31,8 @@ SENDGRID_API_KEY = app.config['SENDGRID_API_KEY']
 
 # Set Up Swagger
 api = Api(app, version='1.0', title='Recipe Roulette Backend API', description='Recipe Roulette Backend API')
-recipe_request_model, ai_recipe_request_model, send_email_model = get_models(api)
-ns = api.namespace('RR', description='Recipe operations')
-
-# Basic Route
-@ns.route('/')
-class Home(Resource):
-    @api.doc(description="Welcome endpoint")
-    def get(self):
-        """Welcome to the Flask Backend!"""
-        return "Welcome to the Flask Backend!"
-    
+recipe_model, recipe_request_model, ai_recipe_request_model, send_email_model = get_models(api)
+ns = api.namespace('RR', description='Recipe operations')    
 
 # Basic Test Fetch
 @ns.route('/get_data')
@@ -55,7 +46,30 @@ class GetData(Resource):
         }
         return jsonify(data)
     
-
+# Get Featured Recipes For Front Page   
+@ns.route('/get_featured_recipes')
+class GetFeaturedRecipes(Resource):
+    @api.doc(description="Get Featured Recipes")
+    def post(self):
+        try:
+            recipes_ref = db.collection('recipes')
+            all_recipes = [doc.to_dict() for doc in recipes_ref.stream()]
+            
+            # Randomly select 4 recipes if there are enough recipes
+            if len(all_recipes) >= 4:
+                selected_recipes = random.sample(all_recipes, 4)
+            else:
+                # If less than 4 recipes exist, return all of them
+                selected_recipes = all_recipes
+            
+            if not selected_recipes:
+                return {"Error": "No Recipes Available"}, 404
+            
+            return selected_recipes, 200
+        
+        except Exception as e:
+            return {"Error": str(e)}, 500
+    
 # Get Recipes Function
 @ns.route('/get_recipes')
 class GetRecipes(Resource):
@@ -145,7 +159,8 @@ class GetAIRecipe(Resource):
         except Exception as e:
             print(e)
             return {"error": "Failed to get response from GPT", "detail": str(e)}, 500
-        
+
+# Send Email, Takes in list of recipes and recipient email     
 @ns.route('/send_email')
 class SendEmail(Resource):
     @api.expect(send_email_model)
@@ -159,13 +174,13 @@ class SendEmail(Resource):
             email= "caseymerritt8976@gmail.com"
 
         #build email content from email_data['recipes'] here recipes will be a list of recipe objects
-        content = ""
+        content = email_data['recipes']
 
         message = Mail(
             from_email='weeklyplanner@myreciperoulette.com',
             to_emails= email,
             subject= "Grocery List",
-            plain_text_content= content
+            plain_text_content= "Test"
             #html_content=content use this later to make it look better lol
         )
         try:
@@ -175,7 +190,6 @@ class SendEmail(Resource):
         except Exception as e:
             print(str(e))
             return {'Response': 'Failed to send email', 'error': str(e)}, 500
-
-
+        
 if __name__ == '__main__':
     app.run(debug=True)
