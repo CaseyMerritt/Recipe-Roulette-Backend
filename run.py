@@ -8,6 +8,8 @@ from firebase_admin import credentials, firestore
 import firebase_admin
 import random
 import openai
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 import json
 
 load_dotenv()
@@ -24,9 +26,12 @@ db = firestore.client()
 # Initialize Openai connection
 openai.api_key = app.config['OPENAI_API_KEY']
 
+# Initialize Sendgrid Api Key
+SENDGRID_API_KEY = app.config['SENDGRID_API_KEY']
+
 # Set Up Swagger
 api = Api(app, version='1.0', title='Recipe Roulette Backend API', description='Recipe Roulette Backend API')
-recipe_request_model, ai_recipe_request_model = get_models(api)
+recipe_request_model, ai_recipe_request_model, send_email_model = get_models(api)
 ns = api.namespace('RR', description='Recipe operations')
 
 # Basic Route
@@ -140,6 +145,37 @@ class GetAIRecipe(Resource):
         except Exception as e:
             print(e)
             return {"error": "Failed to get response from GPT", "detail": str(e)}, 500
+        
+@ns.route('/send_email')
+class SendEmail(Resource):
+    @api.expect(send_email_model)
+    @api.doc(description="Send Email")
+    def post(self):
+        email_data = request.get_json()
+
+        if email_data:
+            email= email_data['email']
+        else:
+            email= "caseymerritt8976@gmail.com"
+
+        #build email content from email_data['recipes'] here recipes will be a list of recipe objects
+        content = ""
+
+        message = Mail(
+            from_email='weeklyplanner@myreciperoulette.com',
+            to_emails= email,
+            subject= "Grocery List",
+            plain_text_content= content
+            #html_content=content use this later to make it look better lol
+        )
+        try:
+            sg = SendGridAPIClient(SENDGRID_API_KEY)
+            response = sg.send(message)
+            return {'Response': 'Email sent successfully', 'status_code': response.status_code}, 200
+        except Exception as e:
+            print(str(e))
+            return {'Response': 'Failed to send email', 'error': str(e)}, 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
