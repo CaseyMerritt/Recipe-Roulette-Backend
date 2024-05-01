@@ -83,6 +83,8 @@ class GetRecipes(Resource):
         if not tags or not isinstance(tags, list):
             return {"Error": "Invalid or missing tags"}, 400
 
+        tags = [tag.lower() for tag in tags]
+
         try:
             recipes_ref = db.collection('recipes')
             matching_recipes = []
@@ -177,7 +179,7 @@ class SendEmail(Resource):
         content = email_data['recipes']
 
         message = Mail(
-            from_email='weeklyplanner@myreciperoulette.com',
+            from_email='weeklyplanner@z.com',
             to_emails= email,
             subject= "Grocery List",
             plain_text_content= "Test"
