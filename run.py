@@ -50,7 +50,7 @@ class GetData(Resource):
 @ns.route('/get_featured_recipes')
 class GetFeaturedRecipes(Resource):
     @api.doc(description="Get Featured Recipes")
-    def post(self):
+    def get(self):
         try:
             recipes_ref = db.collection('recipes')
             all_recipes = [doc.to_dict() for doc in recipes_ref.stream()]

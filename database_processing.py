@@ -12,6 +12,33 @@ db = firestore.client()
 # Load and prepare data
 df = pd.read_csv('C:/Users/casey/Desktop/Recipe Roulette/archive/recipesv2.csv')
 
+def has_valid_image(image_data):
+    if pd.isna(image_data) or image_data == '':
+        return False
+    # Checking if it's a string that represents an empty list
+    if isinstance(image_data, str):
+        # Stripping spaces and checking if it represents an empty list
+        if image_data.strip() in ["[]", "''", '""']:
+            return False
+        try:
+            # Attempt to parse it as JSON and check if it results in an empty list
+            parsed_data = json.loads(image_data.replace("'", "\""))
+            if isinstance(parsed_data, list) and not parsed_data:
+                return False
+        except json.JSONDecodeError:
+            # If JSON decoding fails, it was not a JSON array string
+            pass
+    elif isinstance(image_data, list) and not image_data:
+        return False
+    return True
+
+print("Before filtering:", df.shape)
+df = df[df['images'].apply(has_valid_image)]
+print("After filtering:", df.shape)
+
+# Replace NaN values in 'servings' with 0
+df['servings'].fillna(0, inplace=True)  # Ensuring that NaN values are replaced by 0
+
 # Deserialize columns that are expected to be lists or JSON objects
 def deserialize_column(data):
     try:
@@ -43,7 +70,7 @@ for col in columns_to_upload:
 # Assuming df is your DataFrame already loaded
 df['tags'] = df['tags'].apply(lowercase_tags)
 
-subset_df = df[columns_to_upload].head(1000)
+subset_df = df[columns_to_upload].head(2000)
 
 # Upload function
 def upload_to_firestore(row):
