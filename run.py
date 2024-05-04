@@ -150,6 +150,9 @@ class GetAIRecipe(Resource):
 
             try:
                 recipe_data = json.loads(response.choices[0].message.content)
+                # Generate an image based on the recipe title
+                image_url = generate_image(recipe_data['title'])
+                recipe_data['images'] = [image_url]
 
                 return recipe_data
             
@@ -161,6 +164,24 @@ class GetAIRecipe(Resource):
         except Exception as e:
             print(e)
             return {"error": "Failed to get response from GPT", "detail": str(e)}, 500
+
+def generate_image(title):
+        # Call to an image generation API (example with placeholder code)
+        # Example API request to OpenAI's DALL-E or similar service
+
+        try:
+            image_response = openai.images.generate(
+                model="dall-e-3",
+                prompt=f"An illustration of {title}, visually appealing",
+                n=1,
+                size="1024x1024"
+            )
+            # Assuming the API returns a URL or some form of identifier to access the image
+            image_url = image_response.data[0].url
+            return image_url
+        except Exception as e:
+            print(f"Failed to generate image: {str(e)}")
+            return "path_to_default_placeholder_image.jpg"
 
 # Send Email, Takes in list of recipes and recipient email     
 @ns.route('/send_email')
