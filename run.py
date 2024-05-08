@@ -198,12 +198,27 @@ class SendEmail(Resource):
 
         #build email content from email_data['recipes'] here recipes will be a list of recipe objects
         content = email_data['recipes']
+        
+        send_text = ""
+        for recipe in content:
+            send_text += recipe["title"] + "\n"
+            send_text += "Instructions:\n"
+            for step in recipe["instructions"]:
+                send_text += "- " + step + "\n"
+            send_text += "\nIngredient List:\n"
+            for ingredient in recipe["ingredients"]:
+                send_text += "- " + ingredient["quantity"] + " " + ingredient["unit"] + " " + ingredient["name"] + "\n"
+            send_text += "\nMacronutrients:\n"
+            for nutrient, value in recipe["macronutrients"].items():
+                send_text += "- " + nutrient.capitalize() + ": " + str(value) + "\n"
+            send_text += "\n\n"
 
         message = Mail(
-            from_email='weeklyplanner@z.com',
+            from_email='caseymerritt8976@gmail.com',
             to_emails= email,
             subject= "Grocery List",
-            plain_text_content= "Test"
+
+            plain_text_content= send_text
             #html_content=content use this later to make it look better lol
         )
         try:
@@ -213,6 +228,8 @@ class SendEmail(Resource):
         except Exception as e:
             print(str(e))
             return {'Response': 'Failed to send email', 'error': str(e)}, 500
+
+    
         
 if __name__ == '__main__':
     app.run(debug=True)
