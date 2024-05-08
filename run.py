@@ -144,7 +144,7 @@ class GetAIRecipe(Resource):
                 model="gpt-4", # model="gpt-3.5-turbo",  <= Use for gpt3.5-turbo
                 # response_format={ "type": "json_object" }, <= Only for gpt3.5-turbo
                 messages=[
-                    {"role": "system", "content": "Generate json file with recipe 'title' then 'description' then 'ingredients' then 'steps' that is " + tags + " and contains ONLY the following ingredients and water: " + ingredients + "."}
+                    {"role": "system", "content": "Generate json file with recipe 'title' then 'description' then 'ingredients' (which contains 'name', 'quantity' and 'unit') then 'instructions' (don't number) that is " + tags + " and contains ONLY the following ingredients and water: " + ingredients + "."}
                 ]
             )
 
